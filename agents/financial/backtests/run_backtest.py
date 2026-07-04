@@ -37,9 +37,11 @@ SIGNAL_DATES = [
 def repo_relative(path: Path) -> str:
     resolved = path.resolve()
     try:
-        return str(resolved.relative_to(REPO_ROOT.resolve()))
+        return resolved.relative_to(REPO_ROOT.resolve()).as_posix()
     except ValueError:
-        return str(path)
+        return path.as_posix()
+
+
 ALL_DATA_DATES = [
     "2023-03-31",
     "2023-06-30",

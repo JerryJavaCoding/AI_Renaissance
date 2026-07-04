@@ -11,6 +11,7 @@ from agents.financial.backtests.run_backtest import (
     calculate_metrics,
     load_or_fetch_statements,
     render_markdown_report,
+    repo_relative,
     run_financial_agent,
     standalone_quarter_value,
 )
@@ -43,6 +44,43 @@ def test_build_report_records_shareable_backtest_metadata():
     assert record["sample_pool"] == "agents/financial/backtests/sample_pool_v1.csv"
     assert record["backtest_period"] == "2024Q1 至 2025Q4 信号，2024Q2 至 2026Q1 验证"
     assert record["result_report"] == "agents/financial/backtests/records/financial_agent_backtest_latest.md"
+
+
+def test_repo_relative_normalizes_windows_style_relative_paths():
+    class WindowsStyleRelativePath:
+        def __str__(self):
+            return "agents\\financial\\backtests\\sample_pool_v1.csv"
+
+        def as_posix(self):
+            return "agents/financial/backtests/sample_pool_v1.csv"
+
+    class WindowsStyleResolvedPath:
+        def relative_to(self, _root):
+            return WindowsStyleRelativePath()
+
+    class WindowsStylePath:
+        def resolve(self):
+            return WindowsStyleResolvedPath()
+
+    assert repo_relative(WindowsStylePath()) == "agents/financial/backtests/sample_pool_v1.csv"
+
+
+def test_repo_relative_normalizes_windows_style_fallback_paths():
+    class OutsideResolvedPath:
+        def relative_to(self, _root):
+            raise ValueError
+
+    class WindowsStyleOutsidePath:
+        def __str__(self):
+            return "D:\\tmp\\financial_agent_backtest_latest.md"
+
+        def as_posix(self):
+            return "D:/tmp/financial_agent_backtest_latest.md"
+
+        def resolve(self):
+            return OutsideResolvedPath()
+
+    assert repo_relative(WindowsStyleOutsidePath()) == "D:/tmp/financial_agent_backtest_latest.md"
 
 
 def test_load_or_fetch_statements_require_cache_mode_fails_when_cache_is_incomplete(tmp_path):
